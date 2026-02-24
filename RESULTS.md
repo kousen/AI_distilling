@@ -5,20 +5,37 @@ Hardware: Apple M4 Max, MPS (Metal Performance Shaders)
 
 ## Pipeline Overview
 
-![Pipeline Flow](visuals/pipeline.mmd)
+```mermaid
+flowchart LR
+    subgraph step1["Step 1: Collect"]
+        P["104 Coding\nPrompts"] --> API["Claude API\n(claude-sonnet-4-6)"]
+        API --> D["teacher_data.jsonl\n~$1.61"]
+    end
 
-```
-  Step 1: Collect             Step 2: Fine-tune           Step 3: Compare
-  ─────────────────           ──────────────────          ──────────────────
-  104 prompts                 Qwen 1.5B (base)            Teacher (Claude)
-       │                           │                           │
-       ▼                           ▼                           ▼
-  Claude API ──────────►  LoRA training ──────────►  Side-by-side
-  (claude-sonnet-4-6)      5 epochs, 11 min          comparison
-       │                           │                           │
-       ▼                           ▼                           ▼
-  teacher_data.jsonl        distilled-student/        "Aha" moment
-  ~$1.61                    1.7M params updated       for the video
+    subgraph step2["Step 2: Fine-tune"]
+        D --> LORA["LoRA Training\n5 epochs, ~11 min"]
+        BASE["Qwen 1.5B\n(base)"] --> LORA
+        LORA --> DIST["Distilled\nStudent"]
+    end
+
+    subgraph step3["Step 3: Compare"]
+        TEACHER["Teacher\n(Claude)"] --> CMP["Side-by-Side\nComparison"]
+        BASE2["Base\nStudent"] --> CMP
+        DIST --> CMP
+    end
+
+    style step1 fill:#1a1a2e,stroke:#ffd93d,color:#e0e0e0
+    style step2 fill:#1a1a2e,stroke:#00d4ff,color:#e0e0e0
+    style step3 fill:#1a1a2e,stroke:#ff6b6b,color:#e0e0e0
+    style P fill:#16213e,stroke:#ffd93d,color:#e0e0e0
+    style API fill:#16213e,stroke:#ffd93d,color:#e0e0e0
+    style D fill:#16213e,stroke:#ffd93d,color:#e0e0e0
+    style LORA fill:#16213e,stroke:#00d4ff,color:#e0e0e0
+    style BASE fill:#16213e,stroke:#00d4ff,color:#e0e0e0
+    style DIST fill:#16213e,stroke:#00d4ff,color:#e0e0e0
+    style TEACHER fill:#16213e,stroke:#ff6b6b,color:#e0e0e0
+    style BASE2 fill:#16213e,stroke:#ff6b6b,color:#e0e0e0
+    style CMP fill:#16213e,stroke:#ff6b6b,color:#e0e0e0
 ```
 
 ## Step 1: Data Collection
