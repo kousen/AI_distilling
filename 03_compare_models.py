@@ -78,7 +78,7 @@ def get_teacher_response(prompt, max_tokens=512):
     import anthropic
     client = anthropic.Anthropic()
     response = client.messages.create(
-        model="claude-sonnet-4-5-20250514",
+        model="claude-sonnet-4-6",
         max_tokens=max_tokens,
         messages=[{"role": "user", "content": prompt}],
     )

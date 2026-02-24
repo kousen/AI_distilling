@@ -21,7 +21,7 @@ import time
 import anthropic
 
 # ── Configuration ────────────────────────────────────────────────
-TEACHER_MODEL = "claude-sonnet-4-5-20250514"
+TEACHER_MODEL = "claude-sonnet-4-6"
 OUTPUT_FILE = "teacher_data.jsonl"
 MAX_TOKENS = 1024
 

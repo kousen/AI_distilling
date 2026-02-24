@@ -164,7 +164,7 @@ def train(args):
         report_to="none",  # Set to "tensorboard" if you want to show training curves
         optim="adamw_torch",
         dataset_text_field="text",
-        max_seq_length=args.max_seq_len,
+        max_length=args.max_seq_len,
     )
 
     trainer = SFTTrainer(
