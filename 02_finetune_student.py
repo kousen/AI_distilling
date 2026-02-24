@@ -13,7 +13,7 @@ We use LoRA (Low-Rank Adaptation) so this can run on a single GPU
 or even a MacBook with enough patience.
 
 Usage:
-    python 02_finetune_student.py [--epochs 3] [--batch-size 2]
+    python 02_finetune_student.py [--epochs 5] [--batch-size 2]
 
 Prerequisites:
     - teacher_data.jsonl from Step 1
@@ -39,7 +39,7 @@ from trl import SFTTrainer, SFTConfig
 #   "TinyLlama/TinyLlama-1.1B-Chat-v1.0" — 1.1B, good balance
 #   "Qwen/Qwen2.5-1.5B-Instruct"   — 1.5B, better quality
 #   "microsoft/Phi-3-mini-4k-instruct"    — 3.8B, best quality, needs more VRAM
-STUDENT_MODEL = "Qwen/Qwen2.5-0.5B-Instruct"
+STUDENT_MODEL = "Qwen/Qwen2.5-1.5B-Instruct"
 
 TEACHER_DATA = "teacher_data.jsonl"
 OUTPUT_DIR = "./distilled-student"
@@ -48,7 +48,7 @@ OUTPUT_DIR = "./distilled-student"
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Fine-tune student on teacher data")
-    parser.add_argument("--epochs", type=int, default=3, help="Training epochs")
+    parser.add_argument("--epochs", type=int, default=5, help="Training epochs")
     parser.add_argument("--batch-size", type=int, default=2, help="Batch size per device")
     parser.add_argument("--lr", type=float, default=2e-4, help="Learning rate")
     parser.add_argument("--max-seq-len", type=int, default=1024, help="Max sequence length")
@@ -116,7 +116,7 @@ def setup_model_and_tokenizer(model_name):
 
     model = AutoModelForCausalLM.from_pretrained(
         model_name,
-        torch_dtype=dtype,
+        dtype=dtype,
         trust_remote_code=True,
         device_map="auto" if torch.cuda.is_available() else None,
     )

@@ -126,9 +126,9 @@ python 03_compare_models.py   # auto-detects the base model
 ```
 
 Available models (roughly by size):
-- `Qwen/Qwen2.5-0.5B-Instruct` — fastest, fits anywhere (default)
+- `Qwen/Qwen2.5-0.5B-Instruct` — fastest, fits anywhere
 - `TinyLlama/TinyLlama-1.1B-Chat-v1.0` — slightly better results
-- `Qwen/Qwen2.5-1.5B-Instruct` — good quality, still fast
+- `Qwen/Qwen2.5-1.5B-Instruct` — good balance of quality and speed (default)
 - `microsoft/Phi-3-mini-4k-instruct` — best results, needs ~10GB VRAM
 
 **Add more prompts** — The 32 base prompts are expanded to ~100 via

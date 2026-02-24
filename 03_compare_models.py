@@ -10,7 +10,7 @@ the same prompt:
   3. The Distilled Student — the same small model AFTER training
      on Claude's outputs
 
-The visual of a 0.5B model producing Claude-like coding responses
+The visual of a 1.5B model producing Claude-like coding responses
 is the "aha moment" that makes distillation click for the audience.
 
 Usage:
@@ -30,7 +30,7 @@ from peft import PeftModel
 
 # ── Configuration ────────────────────────────────────────────────
 
-DEFAULT_MODEL = "Qwen/Qwen2.5-0.5B-Instruct"
+DEFAULT_MODEL = "Qwen/Qwen2.5-1.5B-Instruct"
 DISTILLED_MODEL_DIR = "./distilled-student"
 
 
@@ -59,7 +59,7 @@ DEFAULT_PROMPTS = [
     "Write a Python function to check if a binary tree is balanced. Include type hints.",
     "Implement a simple connection pool in Python that limits the number of concurrent connections.",
     "Write a SQL query using window functions to find employees whose salary is above their department average.",
-    "Explain how virtual threads in Java differ from platform threads, with a practical example.",
+    "Write a Python decorator that caches function results with a TTL (time-to-live) expiration.",
 ]
 
 
@@ -109,7 +109,7 @@ def load_base_model(base_model_name):
     tokenizer = AutoTokenizer.from_pretrained(base_model_name, trust_remote_code=True)
     model = AutoModelForCausalLM.from_pretrained(
         base_model_name,
-        torch_dtype=dtype,
+        dtype=dtype,
         trust_remote_code=True,
         device_map=device_map,
     )
@@ -124,7 +124,7 @@ def load_distilled_model(base_model_name):
     tokenizer = AutoTokenizer.from_pretrained(DISTILLED_MODEL_DIR, trust_remote_code=True)
     base_model = AutoModelForCausalLM.from_pretrained(
         base_model_name,
-        torch_dtype=dtype,
+        dtype=dtype,
         trust_remote_code=True,
         device_map=device_map,
     )
