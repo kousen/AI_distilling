@@ -67,6 +67,21 @@ flowchart LR
 Four test prompts comparing all three models: Teacher (Claude), Base Student
 (before distillation), and Distilled Student (after training on Claude's outputs).
 
+### Scoring Methodology
+
+Two kinds of metrics appear in these results:
+
+- **Training metrics** (loss, token accuracy): Reported automatically by SFTTrainer.
+  Token accuracy measures how often the student's top prediction matches the next
+  token in Claude's response. This is objective but measures *imitation fidelity*,
+  not code quality.
+
+- **Quality scores** (the 0-10 scorecard): Rated by Claude Opus 4.6 (the model
+  running this analysis session) after reading each model's output side-by-side.
+  This is an LLM-as-judge approach — the same technique used by MT-Bench and
+  LMSYS Chatbot Arena. In this case, the teacher is literally grading the
+  student's homework.
+
 ### Quality Scorecard
 
 ![Model Scorecard](visuals/model_scorecard.png)
