@@ -24,5 +24,8 @@ distilled-student/
 .DS_Store
 Thumbs.db
 
+# Video production (not part of the demo)
+script.md
+
 # Archives
 *.tar.gz
