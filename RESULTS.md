@@ -76,11 +76,12 @@ Two kinds of metrics appear in these results:
   token in Claude's response. This is objective but measures *imitation fidelity*,
   not code quality.
 
-- **Quality scores** (the 0-10 scorecard): Rated by Claude Opus 4.6 (the model
-  running this analysis session) after reading each model's output side-by-side.
-  This is an LLM-as-judge approach — the same technique used by MT-Bench and
-  LMSYS Chatbot Arena. In this case, the teacher is literally grading the
-  student's homework.
+- **Quality scores** (the 0-10 scorecard): Rated by Claude Opus 4.6 after
+  reading each model's output side-by-side. This is an LLM-as-judge approach —
+  the same technique used by MT-Bench and LMSYS Chatbot Arena. Note the irony:
+  the *teacher* used for distillation was Sonnet 4.6, but the *judge* grading
+  the results is Opus 4.6 — the teacher's bigger, smarter colleague reviewing
+  the student's homework.
 
 ### Quality Scorecard
 
