@@ -7,3 +7,4 @@ accelerate>=1.10.1
 peft>=0.13.0
 sentencepiece>=0.2.0
 protobuf>=5.28.0
+matplotlib>=3.8.0    # for generate_visuals.py

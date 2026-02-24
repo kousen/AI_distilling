@@ -3,29 +3,76 @@
 Run date: 2026-02-24
 Hardware: Apple M4 Max, MPS (Metal Performance Shaders)
 
-## Step 1: Data Collection (`01_collect_teacher_data.py`)
+## Pipeline Overview
 
-- **Prompts**: 104/104 successful (32 base + 72 expanded variations)
-- **Time**: ~24 minutes 40 seconds
-- **Cost**: ~$1.61
-- **Teacher model**: `claude-sonnet-4-6`
-- **Output**: `teacher_data.jsonl`
+![Pipeline Flow](visuals/pipeline.mmd)
 
-## Step 2: Fine-tuning (`02_finetune_student.py`)
+```
+  Step 1: Collect             Step 2: Fine-tune           Step 3: Compare
+  ─────────────────           ──────────────────          ──────────────────
+  104 prompts                 Qwen 1.5B (base)            Teacher (Claude)
+       │                           │                           │
+       ▼                           ▼                           ▼
+  Claude API ──────────►  LoRA training ──────────►  Side-by-side
+  (claude-sonnet-4-6)      5 epochs, 11 min          comparison
+       │                           │                           │
+       ▼                           ▼                           ▼
+  teacher_data.jsonl        distilled-student/        "Aha" moment
+  ~$1.61                    1.7M params updated       for the video
+```
 
-- **Student model**: `Qwen/Qwen2.5-1.5B-Instruct` (1.5B params, LoRA adapters)
-- **Time**: ~11 minutes on M4 Max (MPS)
-- **Epochs**: 5
-- **Loss**: 0.900 → 0.809
-- **Accuracy**: 78.1% → 79.6% (best batch: 82.2% at epoch 4.6)
-- **Output**: `distilled-student/` directory
+## Step 1: Data Collection
 
-## Step 3: Comparison (`03_compare_models.py`)
+| Metric        | Value                                      |
+|---------------|-------------------------------------------:|
+| Prompts       | 104/104 successful (32 base + 72 expanded) |
+| Time          | ~24 minutes 40 seconds                     |
+| Cost          | ~$1.61                                     |
+| Teacher model | `claude-sonnet-4-6`                        |
+| Output        | `teacher_data.jsonl`                       |
+
+## Step 2: Fine-tuning
+
+| Metric           | Value                                  |
+|------------------|---------------------------------------:|
+| Student model    | `Qwen/Qwen2.5-1.5B-Instruct`          |
+| Trainable params | 1.7M / 1.5B (0.1% via LoRA)           |
+| Epochs           | 5                                      |
+| Time             | ~11 minutes (M4 Max, MPS)              |
+| Loss             | 0.900 → 0.809                         |
+| Accuracy         | 78.1% → 79.6% (peak: 82.2% at ep 4.6)|
+| Output           | `distilled-student/`                   |
+
+![Training Curves](visuals/training_curves.png)
+
+## Step 3: Model Comparison
 
 Four test prompts comparing all three models: Teacher (Claude), Base Student
 (before distillation), and Distilled Student (after training on Claude's outputs).
 
-### Prompt 1: Binary tree balanced check (Python)
+### Quality Scorecard
+
+![Model Scorecard](visuals/model_scorecard.png)
+
+| Dimension           | Teacher (Claude) | Base Student | Distilled Student | Improvement |
+|---------------------|:----------------:|:------------:|:-----------------:|:-----------:|
+| Code Correctness    |       9.5        |     5.0      |       6.0         |    +1.0     |
+| Structure & Design  |       9.5        |     4.0      |       7.5         |  **+3.5**   |
+| Documentation       |       9.0        |     4.5      |       8.0         |  **+3.5**   |
+| Error Handling      |       9.0        |     2.5      |       7.0         |  **+4.5**   |
+| Completeness        |       8.5        |     5.0      |       6.5         |    +1.5     |
+| **Average**         |     **9.1**      |   **4.2**    |     **7.0**       |  **+2.8**   |
+
+The biggest gains are in **structure, documentation, and error handling** — exactly
+the stylistic qualities that transfer most easily through distillation. Code
+correctness improves modestly; completeness less so (the 1.5B model still runs
+out of tokens on complex responses).
+
+![Per-Prompt Comparison](visuals/prompt_comparison.png)
+
+### Prompt-by-Prompt Details
+
+#### Prompt 1: Binary tree balanced check (Python)
 
 **Teacher (Claude)**: Uses `@dataclass` for TreeNode, `Optional["TreeNode"]` forward
 refs, a `check_height` helper returning -1 for early termination on imbalance.
@@ -41,12 +88,11 @@ a method on the class (OOP style vs Claude's functional style). Includes detaile
 docstrings with Attributes/Methods sections. More elaborate class design — the
 structure and documentation style clearly echo Claude's patterns.
 
-### Prompt 2: Connection pool (Python)
+#### Prompt 2: Connection pool (Python)
 
 **Teacher (Claude)**: Full production design — `@dataclass` Connection wrapper with
 metadata (created_at, last_used_at, use_count), context manager protocol, Queue-based
-pool, logging, connection validation, pool statistics. Imports threading, time, logging,
-contextmanager, dataclass, Queue.
+pool, logging, connection validation, pool statistics.
 
 **Base student**: Basic but functional — uses `threading.Lock()`, list-based pool,
 `get_connection`/`put_connection` API. Logic bug (pops from empty pool on `get`).
@@ -58,7 +104,7 @@ AlreadyConnectedError, etc.), Connection class with attributes, typed imports. T
 error handling vocabulary and class design clearly mirror Claude's style. Over-engineered
 for the task, but the leap in design pattern sophistication from base is striking.
 
-### Prompt 3: SQL window functions
+#### Prompt 3: SQL window functions
 
 **Teacher (Claude)**: Perfect SQL — uses `AVG(salary) OVER (PARTITION BY department_id)`
 in a subquery, filters with `WHERE salary > dept_avg_salary`, includes `ROUND()`,
@@ -67,35 +113,44 @@ data tables and expected output.
 
 **Base student**: Correct use of `AVG(salary) OVER (PARTITION BY department)` — gets
 the window function right. But stops there: no filtering for above-average, no
-subquery/CTE, just selects the average alongside each row. Mentions comparing but
-doesn't actually implement the filter. Incomplete solution.
+subquery/CTE, just selects the average alongside each row. Incomplete solution.
 
 **Distilled student**: Uses CTEs (`DepartmentAverages`, `EmployeeSalariesAboveAvg`),
 `AVG(salary) OVER (PARTITION BY department_id)`, `ROW_NUMBER()`, JOINs across
 multiple tables, CASE expression for improvement status. Over-complex (ROW_NUMBER
 isn't needed here), but demonstrates CTE vocabulary, multi-table joins, and
-structured query organization the base model didn't attempt. Includes section
-headers and explanation breakdown mimicking Claude's format.
+structured query organization the base model didn't attempt.
 
-### Prompt 4: TTL cache decorator (Python)
+#### Prompt 4: TTL cache decorator (Python)
 
 **Teacher (Claude)**: Full `CacheEntry` dataclass with `is_expired` and
 `ttl_remaining` properties, a `TTLCache` class with thread-safe RLock, LRU eviction
-via OrderedDict, maxsize support, and hit/miss statistics. Clean separation of
-concerns.
+via OrderedDict, maxsize support, and hit/miss statistics.
 
 **Base student**: Correct basic idea — nested decorator with `_cache` dict, key
 generation from function name + args. But the TTL logic is broken: measures elapsed
-time *within a single call* (start_time to end_time) instead of tracking when the
-entry was cached. Raises an exception on stale cache hit instead of re-computing.
-Functional structure but flawed implementation.
+time *within a single call* instead of tracking when the entry was cached.
+Raises an exception on stale cache hit instead of re-computing.
 
 **Distilled student**: Builds a full cache infrastructure — `CacheError` exception,
 `get_cache()` function with module-level state, warning classes (CacheMissWarning,
 CacheHitWarning, CacheFullWarning), and a `Cache` class with `set`/`get`/`delete`/
 `exists`/`flush` API and O(1) complexity claim. Over-architected, but the vocabulary
 (custom exceptions, warning classes, cache API design) clearly reflects Claude's
-influence. Far more sophisticated design than the base model's simple dict approach.
+influence.
+
+## Cost at Scale
+
+![Cost Scaling](visuals/cost_scaling.png)
+
+| Scale                          | Prompts  | Estimated Cost |
+|--------------------------------|---------:|---------------:|
+| Our demo                       |      104 |         $1.61  |
+| Small campaign                 |   10,000 |          $155  |
+| Medium campaign                |1,000,000 |       $15,500  |
+| DeepSeek/MiniMax (alleged)     |16,000,000|      $248,000  |
+
+Every one of those exchanges is revenue for Anthropic. The "attack" paid the victim.
 
 ## Key Observations
 
@@ -122,6 +177,22 @@ influence. Far more sophisticated design than the base model's simple dict appro
 5. **Scale matters.** With 104 training examples and 11 minutes of fine-tuning,
    the effect is visible but modest. The Chinese labs used 16 million exchanges
    over months. At that scale, the capability transfer would be substantial.
+
+## Visuals for Video
+
+All charts are in the `visuals/` directory. Regenerate them with:
+
+```bash
+python generate_visuals.py
+```
+
+| File                     | When to show                                |
+|--------------------------|---------------------------------------------|
+| `training_curves.png`    | During Step 2 discussion                    |
+| `model_scorecard.png`    | After running Step 3, discussing results    |
+| `prompt_comparison.png`  | Highlighting base vs distilled improvement  |
+| `cost_scaling.png`       | During the editorial / "irony" section      |
+| `pipeline.mmd`           | Intro — explaining the 3-step process       |
 
 ---
 
