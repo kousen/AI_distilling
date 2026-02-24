@@ -242,7 +242,7 @@ def main():
 ║  Student model: {base_model_name:<43}║
 ║  This is what Anthropic accused DeepSeek, MiniMax, and      ║
 ║  Moonshot of doing at industrial scale (16M exchanges).     ║
-║  We're doing the same thing with ~30 examples.              ║
+║  We're doing the same thing with ~100 examples.              ║
 ╚══════════════════════════════════════════════════════════════╝
     """)
 
@@ -258,7 +258,7 @@ def main():
 1. The distilled student isn't as good as Claude — but it's dramatically
    better than the base model on the targeted capability.
 
-2. We did this with ~30 training examples. The Chinese labs used 16 MILLION.
+2. We did this with ~100 training examples. The Chinese labs used 16 MILLION.
    At that scale, the capability transfer is substantial.
 
 3. Every one of those 16 million exchanges was a paid API call.

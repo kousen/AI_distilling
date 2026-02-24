@@ -7,7 +7,8 @@ MiniMax, and Moonshot of doing — sending carefully crafted prompts to
 Claude and collecting the responses as training data.
 
 They did it 16 million times across 24,000 fraudulent accounts.
-We're doing it ~100 times with one honest account. Same technique,
+We're doing it ~100 times with one honest account (32 base prompts
+expanded to ~100 via programmatic variations). Same technique,
 very different scale.
 
 Usage:
@@ -78,10 +79,74 @@ CODING_PROMPTS = [
     "Explain how Python's GIL works and why it matters for concurrent programming. Show the difference between threading and multiprocessing with benchmarks.",
 ]
 
-# Total: ~32 prompts. A real campaign would have thousands.
-# MiniMax used 13 million. We're slightly less ambitious.
+# ── Prompt Expansion ─────────────────────────────────────────
+# 32 base prompts isn't enough to reliably shift the student model's
+# behavior. In a real campaign you'd generate thousands programmatically.
+# We'll apply modifiers to subsets of the base prompts to produce
+# variations that elicit genuinely different responses from the teacher.
 
-ALL_PROMPTS = CODING_PROMPTS
+# Each modifier is (suffix_text, applicable_indices) where indices
+# refer to positions in CODING_PROMPTS. None means "apply to all."
+PROMPT_MODIFIERS = [
+    # Variation: add robustness
+    (
+        " Add comprehensive error handling and edge case checks.",
+        list(range(0, 16)),  # data structures + practical tasks
+    ),
+    # Variation: testing
+    (
+        " Include unit tests using pytest that cover normal cases and edge cases.",
+        list(range(0, 16)),  # data structures + practical tasks
+    ),
+    # Variation: complexity analysis
+    (
+        " Analyze the time and space complexity of your solution.",
+        list(range(0, 8)),  # data structures & algorithms
+    ),
+    # Variation: alternative approach
+    (
+        " Now implement an alternative approach and compare the tradeoffs.",
+        list(range(0, 8)) + list(range(20, 24)),  # algorithms + SQL
+    ),
+    # Variation: step-by-step reasoning
+    (
+        " Walk through your reasoning step by step before writing the code.",
+        list(range(8, 20)),  # practical + systems
+    ),
+    # Variation: production readiness
+    (
+        " Make this production-ready with logging, type hints, and docstrings.",
+        list(range(8, 16)),  # practical tasks
+    ),
+]
+
+
+def expand_prompts(base_prompts):
+    """Apply modifiers to base prompts to create a larger training set.
+
+    This is a simplified version of what a real distillation campaign
+    does at scale — programmatically generating prompt variations to
+    maximize coverage of the target capability.
+    """
+    expanded = list(base_prompts)  # start with all originals
+
+    for suffix, indices in PROMPT_MODIFIERS:
+        for i in indices:
+            if i < len(base_prompts):
+                expanded.append(base_prompts[i] + suffix)
+
+    # Deduplicate (shouldn't happen, but just in case)
+    seen = set()
+    unique = []
+    for p in expanded:
+        if p not in seen:
+            seen.add(p)
+            unique.append(p)
+
+    return unique
+
+
+ALL_PROMPTS = expand_prompts(CODING_PROMPTS)
 
 
 def collect_teacher_responses():
