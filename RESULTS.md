@@ -13,82 +13,122 @@ Hardware: Apple M4 Max, MPS (Metal Performance Shaders)
 
 ## Step 2: Fine-tuning (`02_finetune_student.py`)
 
-- **Student model**: `Qwen/Qwen2.5-0.5B-Instruct` (494M params, 1.7M trainable via LoRA = 0.3%)
-- **Time**: ~2 minutes 55 seconds
-- **Loss**: 1.289 → 0.991
-- **Accuracy**: 72.7% → 76.0%
-- **Epochs**: 3
+- **Student model**: `Qwen/Qwen2.5-1.5B-Instruct` (1.5B params, LoRA adapters)
+- **Time**: ~11 minutes on M4 Max (MPS)
+- **Epochs**: 5
+- **Loss**: 0.900 → 0.809
+- **Accuracy**: 78.1% → 79.6% (best batch: 82.2% at epoch 4.6)
 - **Output**: `distilled-student/` directory
 
-## Step 3: Comparison (`03_compare_models.py --no-teacher`)
+## Step 3: Comparison (`03_compare_models.py`)
 
-Four test prompts, each comparing the base student (before distillation) against
-the distilled student (after training on Claude's outputs). Teacher (Claude) was
-skipped via `--no-teacher` to focus on the student comparison.
+Four test prompts comparing all three models: Teacher (Claude), Base Student
+(before distillation), and Distilled Student (after training on Claude's outputs).
 
 ### Prompt 1: Binary tree balanced check (Python)
 
-**Base student**: Produces code but with bugs — `nonlocal max_height` on a
-parameter, confused logic mixing booleans and heights, incorrect comments
-("if the node is None, it's not balanced" then returns True).
+**Teacher (Claude)**: Uses `@dataclass` for TreeNode, `Optional["TreeNode"]` forward
+refs, a `check_height` helper returning -1 for early termination on imbalance.
+Includes docstrings with `Examples:` section and doctests. Production-quality code.
 
-**Distilled student**: Cleaner structure with separate `get_height()` and
-`validate_balance()` helpers, correct algorithm (compare heights, recurse both
-sides), better docstring explaining what "balanced" means. Still has a bug
-(`get_height` missing base case), but the structure and approach are notably
-more Claude-like.
+**Base student**: Correct overall structure — defines TreeNode, `is_balanced`, and a
+`check_balance` helper. Uses -2 as sentinel for imbalance (unusual but workable).
+Good docstring. Cut off before completing the balance check logic, but the approach
+is reasonable.
+
+**Distilled student**: Adds a `height` `@property` to TreeNode, makes `is_balanced`
+a method on the class (OOP style vs Claude's functional style). Includes detailed
+docstrings with Attributes/Methods sections. More elaborate class design — the
+structure and documentation style clearly echo Claude's patterns.
 
 ### Prompt 2: Connection pool (Python)
 
-**Base student**: Confused implementation using a dict where it calls `.get()`
-with no args, immediately stores None back, broken `set_connection` method.
-Cut off mid-function.
+**Teacher (Claude)**: Full production design — `@dataclass` Connection wrapper with
+metadata (created_at, last_used_at, use_count), context manager protocol, Queue-based
+pool, logging, connection validation, pool statistics. Imports threading, time, logging,
+contextmanager, dataclass, Queue.
 
-**Distilled student**: Uses `threading.Event`, `contextmanager` import,
-class-level lock, `acquire()`/`release()` API pattern, docstrings with usage
-examples. Still imperfect (unnecessary `time.sleep`), but the design pattern
-vocabulary is dramatically better.
+**Base student**: Basic but functional — uses `threading.Lock()`, list-based pool,
+`get_connection`/`put_connection` API. Logic bug (pops from empty pool on `get`).
+Includes ThreadPoolExecutor usage example. Simple but shallow.
+
+**Distilled student**: Dramatically more sophisticated — custom exception hierarchy
+(ConnectionPoolError, ConnectionNotFoundError, FullConnectionPoolError,
+AlreadyConnectedError, etc.), Connection class with attributes, typed imports. The
+error handling vocabulary and class design clearly mirror Claude's style. Over-engineered
+for the task, but the leap in design pattern sophistication from base is striking.
 
 ### Prompt 3: SQL window functions
 
-**Base student**: Completely wrong — uses bare `AVG()` without window function
-(would fail in SQL), doesn't partition by department, invents nonexistent
-column names (`emp_salary`), incorrect self-join suggestion.
+**Teacher (Claude)**: Perfect SQL — uses `AVG(salary) OVER (PARTITION BY department_id)`
+in a subquery, filters with `WHERE salary > dept_avg_salary`, includes `ROUND()`,
+percentage above average calculation, `JOIN departments`, `ORDER BY`. Provides sample
+data tables and expected output.
 
-**Distilled student**: Uses CTEs, `AVG(salary) OVER (PARTITION BY department_id)`,
-proper JOIN, CASE expression. The SQL is more complex than needed (over-engineered)
-but demonstrates actual window function knowledge the base model didn't have.
+**Base student**: Correct use of `AVG(salary) OVER (PARTITION BY department)` — gets
+the window function right. But stops there: no filtering for above-average, no
+subquery/CTE, just selects the average alongside each row. Mentions comparing but
+doesn't actually implement the filter. Incomplete solution.
 
-### Prompt 4: Java virtual threads
+**Distilled student**: Uses CTEs (`DepartmentAverages`, `EmployeeSalariesAboveAvg`),
+`AVG(salary) OVER (PARTITION BY department_id)`, `ROW_NUMBER()`, JOINs across
+multiple tables, CASE expression for improvement status. Over-complex (ROW_NUMBER
+isn't needed here), but demonstrates CTE vocabulary, multi-table joins, and
+structured query organization the base model didn't attempt. Includes section
+headers and explanation breakdown mimicking Claude's format.
 
-**Base student**: Almost entirely wrong — claims virtual threads are "managed by
-the JVM rather than application code" (backwards), says `-Xms`/`-Xmx` controls
-thread count (those control heap memory), confuses platform threads with OS
-processes/PIDs.
+### Prompt 4: TTL cache decorator (Python)
 
-**Distilled student**: Still inaccurate (confuses scheduling policies, mentions
-LRU eviction which isn't relevant), but uses correct Java syntax, includes a code
-example with `Thread.currentThread().getName()`, and at least frames it as a
-concurrency concept rather than a memory management one. Improvement visible, but
-Java knowledge transfer was weaker than Python/SQL.
+**Teacher (Claude)**: Full `CacheEntry` dataclass with `is_expired` and
+`ttl_remaining` properties, a `TTLCache` class with thread-safe RLock, LRU eviction
+via OrderedDict, maxsize support, and hit/miss statistics. Clean separation of
+concerns.
+
+**Base student**: Correct basic idea — nested decorator with `_cache` dict, key
+generation from function name + args. But the TTL logic is broken: measures elapsed
+time *within a single call* (start_time to end_time) instead of tracking when the
+entry was cached. Raises an exception on stale cache hit instead of re-computing.
+Functional structure but flawed implementation.
+
+**Distilled student**: Builds a full cache infrastructure — `CacheError` exception,
+`get_cache()` function with module-level state, warning classes (CacheMissWarning,
+CacheHitWarning, CacheFullWarning), and a `Cache` class with `set`/`get`/`delete`/
+`exists`/`flush` API and O(1) complexity claim. Over-architected, but the vocabulary
+(custom exceptions, warning classes, cache API design) clearly reflects Claude's
+influence. Far more sophisticated design than the base model's simple dict approach.
 
 ## Key Observations
 
-1. The distillation effect is **most visible in Python and SQL** — the distilled
-   model picked up Claude's structural patterns (helper functions, docstrings,
-   CTEs, window functions).
+1. **The 1.5B model shows a much clearer distillation effect than 0.5B.** The base
+   1.5B model already writes reasonable code, but the distilled version's *style*
+   and *design vocabulary* visibly shift toward Claude's patterns.
 
-2. The distilled model's **vocabulary changed** — it uses terms like
-   "acquire/release", "contextmanager", "CTE", "PARTITION BY" that the base
-   model didn't.
+2. **The distilled model consistently over-engineers.** Custom exception hierarchies,
+   warning classes, dataclass wrappers — it picked up Claude's tendency toward
+   production-grade structure, even when the prompt doesn't call for it. This is
+   actually the most visible evidence of distillation: the base model writes simple
+   code, the distilled model writes *Claude-shaped* code.
 
-3. The base model **confidently produces broken code** while the distilled model
-   produces **more structured but still imperfect** code — a clear quality shift.
+3. **Documentation style transfer is the clearest signal.** The distilled model
+   adds section headers (## Overview, ### Requirements), structured explanations,
+   and detailed docstrings that the base model doesn't produce. This formatting
+   is pure Claude.
 
-4. **Java knowledge transferred least well** — likely because with only ~100
-   examples, there weren't enough Java-specific training pairs. At 16M exchanges,
-   this gap would close substantially.
+4. **The SQL prompt shows the most dramatic improvement.** The base model gets the
+   window function right but doesn't complete the solution. The distilled model
+   builds CTEs, multi-table JOINs, and structured query organization — techniques
+   present in the training data from Claude.
 
-5. With only 104 training examples and 3 minutes of fine-tuning, a 0.5B parameter
-   model shows measurable improvement. The Chinese labs used 16 million exchanges
-   over months. Scale matters.
+5. **Scale matters.** With 104 training examples and 11 minutes of fine-tuning,
+   the effect is visible but modest. The Chinese labs used 16 million exchanges
+   over months. At that scale, the capability transfer would be substantial.
+
+---
+
+## Previous Run (0.5B model, 3 epochs)
+
+An earlier test run used `Qwen/Qwen2.5-0.5B-Instruct` with 3 epochs:
+- Training time: ~3 minutes, Loss: 1.289 → 0.991, Accuracy: 72.7% → 76.0%
+- The distillation effect was visible but weaker — the 0.5B model has less
+  capacity to absorb Claude's patterns. The 1.5B model was a clear improvement
+  for demo purposes.
