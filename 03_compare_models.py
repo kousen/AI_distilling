@@ -264,8 +264,9 @@ def main():
 3. Every one of those 16 million exchanges was a paid API call.
    Anthropic made money from the "attack."
 
-4. This is the SAME technique Anthropic uses to create Claude Haiku
-   from larger Claude models. Distillation is standard practice.
+4. This is widely understood to be how model families work — larger
+   models train smaller ones. Anthropic hasn't confirmed the details,
+   but distillation is standard industry practice.
    The question is: who gets to do it, and to whom?
 """)
 
