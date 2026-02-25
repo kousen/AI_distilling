@@ -1,6 +1,6 @@
 # Distillation Demo: What Anthropic Accused DeepSeek of Doing
 
-**For video: "I Replicated What Anthropic Accused DeepSeek of Doing"**
+**For video: "China 'Stole' Claude — So I Did the Same Thing (for $1.61)"**
 
 On February 24, 2026, Anthropic published a blog post accusing DeepSeek, MiniMax,
 and Moonshot AI of running "industrial-scale distillation campaigns" against Claude,
