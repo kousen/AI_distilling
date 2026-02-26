@@ -7,24 +7,22 @@ Hardware: Apple M4 Max, MPS (Metal Performance Shaders)
 
 ```mermaid
 flowchart TD
-    subgraph step1["Step 1: Collect Teacher Data"]
-        P["32 Base Prompts"] --> EXP["Expand to 104\nvia modifiers"]
-        EXP --> API["Claude Sonnet 4.6 API"]
-        API --> D["teacher_data.jsonl\n104 prompt-completion pairs\nCost: ~$1.61"]
+    subgraph step1["Step 1: Collect"]
+        P["32 Base Prompts"] --> EXP["Expand to 104"]
+        EXP --> API["Claude Sonnet 4.6"]
+        API --> D["teacher_data.jsonl"]
     end
 
-    subgraph step2["Step 2: Fine-Tune Student Model"]
-        D --> FMT["Format as chat template"]
-        BASE["Qwen 2.5 1.5B\n(base model)"] --> LORA["LoRA Training\n1.7M params / 1.5B total\n5 epochs, ~11 min on M4 Max"]
-        FMT --> LORA
-        LORA --> DIST["Distilled Student\n17 MB adapter"]
+    subgraph step2["Step 2: Fine-Tune"]
+        D --> LORA["LoRA Training"]
+        BASE["Qwen 2.5 1.5B"] --> LORA
+        LORA --> DIST["Distilled Student"]
     end
 
-    subgraph step3["Step 3: Compare Results"]
-        TEACHER["Teacher\n(Claude Sonnet 4.6)"] --> CMP["Side-by-Side\nComparison"]
-        BASE2["Base Student\n(before distillation)"] --> CMP
+    subgraph step3["Step 3: Compare"]
+        TEACHER["Claude"] --> CMP["Side-by-Side"]
+        BASE2["Base Student"] --> CMP
         DIST --> CMP
-        CMP --> SCORE["Scorecard\nStyle transfers.\nSubstance does not."]
     end
 
     style step1 fill:#1a1a2e,stroke:#ffd93d,color:#e0e0e0
@@ -34,14 +32,12 @@ flowchart TD
     style EXP fill:#16213e,stroke:#ffd93d,color:#e0e0e0
     style API fill:#16213e,stroke:#ffd93d,color:#e0e0e0
     style D fill:#16213e,stroke:#ffd93d,color:#e0e0e0
-    style FMT fill:#16213e,stroke:#00d4ff,color:#e0e0e0
     style LORA fill:#16213e,stroke:#00d4ff,color:#e0e0e0
     style BASE fill:#16213e,stroke:#00d4ff,color:#e0e0e0
     style DIST fill:#16213e,stroke:#00d4ff,color:#e0e0e0
     style TEACHER fill:#16213e,stroke:#ff6b6b,color:#e0e0e0
     style BASE2 fill:#16213e,stroke:#ff6b6b,color:#e0e0e0
     style CMP fill:#16213e,stroke:#ff6b6b,color:#e0e0e0
-    style SCORE fill:#16213e,stroke:#ff6b6b,color:#e0e0e0
 ```
 
 ## Step 1: Data Collection
