@@ -25,19 +25,19 @@ flowchart TD
         DIST --> CMP
     end
 
-    style step1 fill:#1a1a2e,stroke:#ffd93d,color:#e0e0e0
-    style step2 fill:#1a1a2e,stroke:#00d4ff,color:#e0e0e0
-    style step3 fill:#1a1a2e,stroke:#ff6b6b,color:#e0e0e0
-    style P fill:#16213e,stroke:#ffd93d,color:#e0e0e0
-    style EXP fill:#16213e,stroke:#ffd93d,color:#e0e0e0
-    style API fill:#16213e,stroke:#ffd93d,color:#e0e0e0
-    style D fill:#16213e,stroke:#ffd93d,color:#e0e0e0
-    style LORA fill:#16213e,stroke:#00d4ff,color:#e0e0e0
-    style BASE fill:#16213e,stroke:#00d4ff,color:#e0e0e0
-    style DIST fill:#16213e,stroke:#00d4ff,color:#e0e0e0
-    style TEACHER fill:#16213e,stroke:#ff6b6b,color:#e0e0e0
-    style BASE2 fill:#16213e,stroke:#ff6b6b,color:#e0e0e0
-    style CMP fill:#16213e,stroke:#ff6b6b,color:#e0e0e0
+    style step1 fill:#fff8e1,stroke:#f9a825,color:#333
+    style step2 fill:#e1f5fe,stroke:#0288d1,color:#333
+    style step3 fill:#fce4ec,stroke:#c62828,color:#333
+    style P fill:#fff,stroke:#f9a825,color:#333
+    style EXP fill:#fff,stroke:#f9a825,color:#333
+    style API fill:#fff,stroke:#f9a825,color:#333
+    style D fill:#fff,stroke:#f9a825,color:#333
+    style LORA fill:#fff,stroke:#0288d1,color:#333
+    style BASE fill:#fff,stroke:#0288d1,color:#333
+    style DIST fill:#fff,stroke:#0288d1,color:#333
+    style TEACHER fill:#fff,stroke:#c62828,color:#333
+    style BASE2 fill:#fff,stroke:#c62828,color:#333
+    style CMP fill:#fff,stroke:#c62828,color:#333
 ```
 
 ## Step 1: Data Collection
