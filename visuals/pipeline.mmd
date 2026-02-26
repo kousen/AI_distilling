@@ -1,30 +1,36 @@
-flowchart LR
-    subgraph step1["Step 1: Collect"]
-        P["104 Coding\nPrompts"] --> API["Claude API\n(claude-sonnet-4-6)"]
-        API --> D["teacher_data.jsonl\n~$1.61"]
+flowchart TD
+    subgraph step1["Step 1: Collect Teacher Data"]
+        P["32 Base Prompts"] --> EXP["Expand to 104\nvia modifiers"]
+        EXP --> API["Claude Sonnet 4.6 API"]
+        API --> D["teacher_data.jsonl\n104 prompt-completion pairs\nCost: ~$1.61"]
     end
 
-    subgraph step2["Step 2: Fine-tune"]
-        D --> LORA["LoRA Training\n5 epochs, ~11 min"]
-        BASE["Qwen 1.5B\n(base)"] --> LORA
-        LORA --> DIST["Distilled\nStudent"]
+    subgraph step2["Step 2: Fine-Tune Student Model"]
+        D --> FMT["Format as chat template"]
+        BASE["Qwen 2.5 1.5B\n(base model)"] --> LORA["LoRA Training\n1.7M params / 1.5B total\n5 epochs, ~11 min on M4 Max"]
+        FMT --> LORA
+        LORA --> DIST["Distilled Student\n17 MB adapter"]
     end
 
-    subgraph step3["Step 3: Compare"]
-        TEACHER["Teacher\n(Claude)"] --> CMP["Side-by-Side\nComparison"]
-        BASE2["Base\nStudent"] --> CMP
+    subgraph step3["Step 3: Compare Results"]
+        TEACHER["Teacher\n(Claude Sonnet 4.6)"] --> CMP["Side-by-Side\nComparison"]
+        BASE2["Base Student\n(before distillation)"] --> CMP
         DIST --> CMP
+        CMP --> SCORE["Scorecard\nStyle transfers.\nSubstance does not."]
     end
 
     style step1 fill:#1a1a2e,stroke:#ffd93d,color:#e0e0e0
     style step2 fill:#1a1a2e,stroke:#00d4ff,color:#e0e0e0
     style step3 fill:#1a1a2e,stroke:#ff6b6b,color:#e0e0e0
     style P fill:#16213e,stroke:#ffd93d,color:#e0e0e0
+    style EXP fill:#16213e,stroke:#ffd93d,color:#e0e0e0
     style API fill:#16213e,stroke:#ffd93d,color:#e0e0e0
     style D fill:#16213e,stroke:#ffd93d,color:#e0e0e0
+    style FMT fill:#16213e,stroke:#00d4ff,color:#e0e0e0
     style LORA fill:#16213e,stroke:#00d4ff,color:#e0e0e0
     style BASE fill:#16213e,stroke:#00d4ff,color:#e0e0e0
     style DIST fill:#16213e,stroke:#00d4ff,color:#e0e0e0
     style TEACHER fill:#16213e,stroke:#ff6b6b,color:#e0e0e0
     style BASE2 fill:#16213e,stroke:#ff6b6b,color:#e0e0e0
     style CMP fill:#16213e,stroke:#ff6b6b,color:#e0e0e0
+    style SCORE fill:#16213e,stroke:#ff6b6b,color:#e0e0e0
