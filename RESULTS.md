@@ -227,6 +227,7 @@ python generate_visuals.py
 | `model_scorecard.png`    | After running Step 3, discussing results    |
 | `prompt_comparison.png`  | Highlighting base vs distilled improvement  |
 | `cost_scaling.png`       | During the editorial / "irony" section      |
+| `lora_diagram.png`       | Explaining LoRA in Step 2                   |
 | `pipeline.mmd`           | Intro — explaining the 3-step process       |
 
 ---

@@ -187,6 +187,115 @@ def plot_cost_scaling():
     print(f"  Saved: {path}")
 
 
+def plot_lora_diagram():
+    """Illustrate how LoRA works: frozen W + trainable low-rank A and B."""
+
+    fig, ax = plt.subplots(figsize=(14, 8))
+    fig.suptitle("LoRA: Low-Rank Adaptation", fontweight="bold")
+
+    W_COLOR = "#4a4a6a"  # same neutral color for W on both sides
+
+    # --- Helper to draw a labeled matrix block ---
+    def draw_matrix(x, y, w, h, label, color, sublabel=None):
+        rect = plt.Rectangle((x, y), w, h, facecolor=color, edgecolor="#e0e0e0",
+                              linewidth=2, alpha=0.85)
+        ax.add_patch(rect)
+        ax.text(x + w / 2, y + h / 2, label, ha="center", va="center",
+                fontsize=16, fontweight="bold", color="#fff")
+        if sublabel:
+            ax.text(x + w / 2, y - 0.3, sublabel, ha="center", va="top",
+                    fontsize=11, color="#aaa", style="italic")
+
+    # Layout constants
+    mid_y = 3.5
+
+    # --- Left side: Standard fine-tuning ---
+    ax.text(3.0, 7.7, "Standard Fine-Tuning", ha="center", fontsize=15,
+            fontweight="bold", color="#ff6b6b")
+    ax.text(3.0, 7.1, "Update ALL of W directly", ha="center", fontsize=12,
+            color="#aaa")
+    draw_matrix(1.0, mid_y, 4.0, 3.0, "W\n(d × d)", W_COLOR,
+                sublabel="1.5 billion params — all trainable")
+
+    # Red border to indicate "trainable"
+    highlight = plt.Rectangle((1.0, mid_y), 4.0, 3.0, facecolor="none",
+                               edgecolor="#ff6b6b", linewidth=3, linestyle="--")
+    ax.add_patch(highlight)
+
+    # --- Right side: LoRA ---
+    ax.text(11.0, 7.7, "LoRA Fine-Tuning", ha="center", fontsize=15,
+            fontweight="bold", color="#00d4ff")
+    ax.text(11.0, 7.1, "Freeze W, train only B and A", ha="center",
+            fontsize=12, color="#aaa")
+
+    # Frozen W (same color as left side)
+    draw_matrix(7.5, mid_y, 3.0, 3.0, "W\n(d × d)", W_COLOR,
+                sublabel="1.5B params — frozen")
+    ax.text(9.0, mid_y + 3.15, "FROZEN", ha="center", va="bottom",
+            fontsize=10, fontweight="bold", color="#aaa")
+
+    # Plus sign
+    ax.text(11.0, mid_y + 1.5, "+", ha="center", va="center",
+            fontsize=28, fontweight="bold", color="#e0e0e0")
+
+    # B matrix (d × r) — tall and narrow
+    draw_matrix(11.8, mid_y + 0.4, 0.8, 2.2, "B", "#0288d1",
+                sublabel="d × r")
+
+    # Multiplication dot
+    ax.text(13.0, mid_y + 1.5, "×", ha="center", va="center",
+            fontsize=22, fontweight="bold", color="#e0e0e0")
+
+    # A matrix (r × d) — short and wide
+    draw_matrix(13.4, mid_y + 0.8, 2.2, 0.8, "A", "#0288d1",
+                sublabel="r × d")
+
+    # Cyan border around B×A to indicate "trainable"
+    trainable_box = plt.Rectangle((11.6, mid_y + 0.2), 4.2, 2.6, facecolor="none",
+                                   edgecolor="#00d4ff", linewidth=3, linestyle="--")
+    ax.add_patch(trainable_box)
+    ax.text(13.7, mid_y + 2.95, "TRAINABLE", ha="center", va="bottom",
+            fontsize=10, fontweight="bold", color="#00d4ff")
+
+    # Annotation: rank — position to the right to avoid overlap
+    ax.annotate("r = 16", xy=(12.2, mid_y + 0.3), xytext=(11.2, mid_y - 1.0),
+                fontsize=13, fontweight="bold", color="#ffd93d",
+                ha="center",
+                arrowprops=dict(arrowstyle="->", color="#ffd93d", lw=1.5))
+
+    # --- Forward pass equation ---
+    ax.text(8.5, 1.5, "Forward pass:   output  =  W·x  +  B·A·x",
+            ha="center", fontsize=15, fontweight="bold", color="#e0e0e0",
+            family="monospace",
+            bbox=dict(boxstyle="round,pad=0.4", facecolor="#2a2a4a",
+                      edgecolor="#e0e0e0", linewidth=1.5))
+
+    # --- Caption explaining B×A ---
+    ax.text(8.5, 0.5,
+            "B × A approximates the weight update $\\Delta$W "
+            "that standard fine-tuning would have made",
+            ha="center", fontsize=12, color="#aaa", style="italic")
+
+    # --- Bottom: parameter comparison ---
+    ax.text(3.0, 2.5, "100% of parameters trained", ha="center",
+            fontsize=13, color="#ff6b6b", fontweight="bold")
+    ax.text(13.7, 2.5, "0.1% of parameters trained", ha="center",
+            fontsize=13, color="#00d4ff", fontweight="bold")
+    ax.text(13.7, 2.0, "(1.7 million out of 1.5 billion)", ha="center",
+            fontsize=11, color="#aaa")
+
+    ax.set_xlim(-0.5, 16.5)
+    ax.set_ylim(0, 8.5)
+    ax.set_aspect("equal")
+    ax.axis("off")
+
+    plt.tight_layout()
+    path = f"{OUTPUT_DIR}/lora_diagram.png"
+    plt.savefig(path, dpi=150, bbox_inches="tight")
+    plt.close()
+    print(f"  Saved: {path}")
+
+
 def plot_prompt_comparison():
     """Grouped bar chart showing base vs distilled scores per prompt."""
 
@@ -241,6 +350,7 @@ if __name__ == "__main__":
     plot_scorecard()
     plot_cost_scaling()
     plot_prompt_comparison()
+    plot_lora_diagram()
 
     print(f"\nAll visuals saved to {OUTPUT_DIR}/")
     print("Files:")
@@ -248,3 +358,4 @@ if __name__ == "__main__":
     print("  model_scorecard.png   — Radar chart: Teacher vs Base vs Distilled")
     print("  cost_scaling.png      — What this costs at scale")
     print("  prompt_comparison.png — Base vs Distilled per prompt")
+    print("  lora_diagram.png     — How LoRA works (frozen W + small A, B)")
